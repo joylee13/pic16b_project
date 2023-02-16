@@ -1,0 +1,43 @@
+html {
+    font-family: sans-serif;
+    padding: 1rem;
+    background-image: url("bg-0--300@2x.bcb8d84f5158155239555e89d715b845.jpg");
+}
+
+h1 {
+    color: white;
+    font-family: Papyrus, fantasy;
+    margin: 1rem 0.5;
+    text-align: center;
+    font-size: 32px;
+}
+
+a {
+    color: CornflowerBlue;
+    text-decoration: none;
+}
+
+nav {
+    text-align: center;
+}
+
+nav a {
+    display: inline-flex;
+    padding: 0.5rem;
+}
+
+h2{
+    color: rgba(255, 255, 255, 0.8);
+}
+
+h3{
+    color: rgba(255, 255, 255, 0.8);
+}
+
+ul{
+    color: rgba(255, 255, 255, 0.8);
+}
+
+p{
+    color: rgba(255, 255, 255, 0.8);
+}

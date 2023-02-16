@@ -1,0 +1,14 @@
+<!doctype html>
+<!-- uncomment the line below later -->
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<nav>
+  <h1>Netflix Blendz!</h1>
+  <!-- <b>Navigation:</b> -->
+  <a href="{{ url_for('main') }}">Submit Watch History</a>       
+</nav>
+<section class="content">
+  <header>
+    {% block header %}{% endblock %}
+  </header>
+  {% block content %}{% endblock %}
+</section>

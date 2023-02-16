@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h2>Accessing your Watch History on Netflix</h2>
+{% endblock %}
+
+{% block content %}
+<p> Upload your Netflix watch history below to find out about your 
+    Netflix stats and view your personalized <em>Blendz</em>.
+    <br>
+</p>
+<h3> Don't know how to access your watch history? </h3>
+<ul>
+    <li> First, log in your <a href="https://www.netflix.com/">Netflix account</a> </li>
+    <li> Go to your <b>Account</b> page </li>
+    <li> Open the <b>Profile & Parental Controls</b> settings for the profile you want to see </li>
+    <li> Open <b>Viewing Activity</b>
+    <li> Select <b>Download all</b> at the bottom of the page to download your watch history as .csv file</li>
+</ul>
+<br>
+<h3>Upload your CSV file here</h3>
+    <form method="POST" action="" enctype="multipart/form-data">
+      <p><input type="file" name="file"></p>
+      <p><input type="submit" value="Submit"></p>
+    </form>
+{% endblock %}
