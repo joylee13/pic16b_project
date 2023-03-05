@@ -14,13 +14,23 @@ def main():
     return render_template('main.html')
 
 # Get the uploaded files
-@app.route("/", methods=['POST'])
-def uploadFiles():
-      # get the uploaded file
-      uploaded_file = request.files['file']
-      if uploaded_file.filename != '':
-           file_path = os.path.join(app.config['UPLOAD_FOLDER'], uploaded_file.filename)
-          # set the file path
-           uploaded_file.save(file_path)
-          # save the file
-      return redirect(url_for('main'))
+@app.route("/submit/")
+def submit():
+    return render_template('submit.html')
+
+@app.route("/submit/", methods=["POST"])
+def upload_file():
+    # get the uploaded file
+    uploaded_file1 = request.files['file1']
+    uploaded_file2 = request.files['file2']
+    if uploaded_file1.filename != '':
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], uploaded_file1.filename)
+        # set the file path
+        uploaded_file1.save(file_path)
+        # save the file
+    if uploaded_file2.filename != '':
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], uploaded_file2.filename)
+        # set the file path
+        uploaded_file2.save(file_path)
+        # save the file
+    return redirect(url_for('main'))

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h2>Upload your watch histories below to view your personalized Blendz!</h2>
+{% endblock %}
+
+{% block content %}
+<h3> Don't know how to access your watch history? </h3>
+<ul>
+    <li> Log into your <a href="https://www.netflix.com/">Netflix account</a> </li>
+    <li> Go to your <b>Account</b> page </li>
+    <li> Open the <b>Profile & Parental Controls</b> settings for the profile you want to see </li>
+    <li> Open <b>Viewing Activity</b>
+    <li> Select <b>Download all</b> at the bottom of the page to download your watch history as .csv file</li>
+</ul>
+<br>
+<h3> Upload 2 users' watch history files below: </h3>
+<form method="POST" action="" enctype="multipart/form-data">
+  <p><input type="file" name="file1"> <input type="file" name="file2"></p>
+  <p><button type="submit" value="submit">Find Your Blend!</button></p>
+</form>
+{% endblock %}
