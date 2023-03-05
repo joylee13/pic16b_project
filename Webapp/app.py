@@ -20,9 +20,11 @@ def submit():
 
 @app.route("/submit/", methods=["POST"])
 def upload_file():
-    # get the uploaded file
+    # get the submitted info
+    name = request.form['name']
     uploaded_file1 = request.files['file1']
     uploaded_file2 = request.files['file2']
+    # REST NEEDS MODIFICATION BASED ON STORAGE ARCHITECTURE
     if uploaded_file1.filename != '':
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], uploaded_file1.filename)
         # set the file path
@@ -33,4 +35,8 @@ def upload_file():
         # set the file path
         uploaded_file2.save(file_path)
         # save the file
-    return redirect(url_for('main'))
+    return redirect(url_for('insights', name = name))
+
+@app.route("/insights/<name>")
+def insights(name):
+    return render_template('insights.html', name = name)
