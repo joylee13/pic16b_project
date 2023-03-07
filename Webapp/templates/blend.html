@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h3>Enter your username and the username of the person you want to blend with!</h3>
+{% endblock %}
+
+{% block content %}
+<form method="POST" action="">
+  <p><label for="name"> Person 1's username:</label>
+    <input type="text" name="name1" id="name"></p>
+  <p><label for="name"> Person 2's username:</label>
+    <input type="text" name="name2" id="name"></p>
+  <p><button type="submit" name="action" value="submit">Find your blend!</button></p>
+</form>
+{% endblock %}

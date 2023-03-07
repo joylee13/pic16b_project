@@ -22,21 +22,30 @@ def submit():
 def upload_file():
     # get the submitted info
     name = request.form['name']
-    uploaded_file1 = request.files['file1']
-    uploaded_file2 = request.files['file2']
+    uploaded_file = request.files['file']
     # REST NEEDS MODIFICATION BASED ON STORAGE ARCHITECTURE
-    if uploaded_file1.filename != '':
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], uploaded_file1.filename)
+    if uploaded_file.filename != '':
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], uploaded_file.filename)
         # set the file path
-        uploaded_file1.save(file_path)
+        uploaded_file.save(file_path)
         # save the file
-    if uploaded_file2.filename != '':
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], uploaded_file2.filename)
-        # set the file path
-        uploaded_file2.save(file_path)
-        # save the file
-    return redirect(url_for('insights', name = name))
+    if request.form['action'] == 'submit':
+        return redirect(url_for('submit'))
+    else:
+        return redirect(url_for('blend'))
 
-@app.route("/insights/<name>")
-def insights(name):
-    return render_template('insights.html', name = name)
+@app.route("/insights/")
+def insights():
+    return render_template('insights.html',
+                           name1=request.args.get('name1'),
+                           name2=request.args.get('name2'))
+
+@app.route("/blend/")
+def blend():
+    return render_template('blend.html')
+
+@app.route("/blend/", methods=["POST"])
+def create_blend():
+    name1 = request.form['name1']
+    name2 = request.form['name2']
+    return redirect(url_for('insights', name1=name1, name2=name2))

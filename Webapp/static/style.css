@@ -32,7 +32,7 @@ html {
     color: white;
     font-family: optima, sans-serif;
     font-size: 60px;
-    margin: 0;
+    margin-top: 0;
 }
 
 div.header {
@@ -68,4 +68,15 @@ button{
     cursor: pointer;
     font-weight: bold;
     padding: 8px 8px;
+}
+
+nav{
+    text-align: center;
+    margin: auto;
+    font-size: large;
+}
+
+nav li{
+    padding-right: 30px;
+    display: inline;
 }
