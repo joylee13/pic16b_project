@@ -3,6 +3,7 @@ import os
 from os.path import join, dirname, realpath
 import sqlite3
 import pandas as pd
+import plotly.express as px
 
 app = Flask(__name__)
 
@@ -60,7 +61,7 @@ def create_blend():
 
 
 # Database Organization
-def insert_user(): 
+def get_user(username): 
     """
     Creates a SQLite table named after each user 
     with their viewing history from the uploaded csv:
@@ -68,20 +69,18 @@ def insert_user():
     string Date for date the title was watched.
     string Title for the title name.
     """
-    # get username
-    username = request.form['name'] 
     try:
         return g.users_db
     # if not, create database
     except:
         with sqlite3.connect(DB_NAME) as conn:
             cur = conn.cursor()
-            cmd = """CREATE TABLE IF NOT EXISTS ? (
-            Title nvarchar(50),
-            Date nvarchar(10),
+            cmd = f"""CREATE TABLE IF NOT EXISTS {username} (
+            Title nvarchar(255),
+            Date nvarchar(10)
             );
             """
-            cur.execute(cmd, username)
+            cur.execute(cmd)
             conn.commit()
             g.users_db = conn
             return g.users_db
@@ -93,30 +92,27 @@ def insert_history(request):
     uploads their history into their SQL table.
     """
     # connect to database
-    conn = insert_user()                     
     username = request.form['name'] 
+    conn = get_user(username=username)                    
     # import CSV
     uploaded_file = request.files['file']
     data = pd.read_csv(uploaded_file)   
-    df = pd.DataFrame(data)
     # insert DataFrame to table
-    cursor = conn.cursor()
-    for row in df.itertuples():
-       cursor.execute("""
-            INSERT INTO {} (Title, Date)
-            VALUES ({},{});
-            """.format(username, row.Title, row.Date)
-            )
+    data.to_sql(username, conn, index = False, if_exists='replace')
     conn.commit()   # save history
     conn.close()    # close connection
 
-def get_history(name):
+def get_history(username):
     '''
     Function that gets users history and returns their cleaned dataframe
     '''
-    # WRITE APPROPRIATE SQL COMMANDS HERE
+    conn = get_user(username=username)
+    cmd = """SELECT * from {}""".format(username)
+    df = pd.read_sql(cmd, conn)
+
     # CALL CLEAN_DATA
-    pass
+    df = clean_watch_history(df)
+    return df
 
 def clean_watch_history(df):
     '''
@@ -139,7 +135,6 @@ def clean_watch_history(df):
 
     tv = df[df['Type']!='Movie']
     tv['Season'] = tv['Season'].str.split().str[1]
-    tv['Season'] = tv['Season'].astype(int)
 
     movies = df[df['Type']=='Movie']
     movies['Title'] = movies['History']
@@ -153,11 +148,49 @@ def netflix_merge(df):
     Function that merges given watch history with netflix dataset,
     and returns merged dataset
     '''
-    pass
+    titles = pd.read_csv('static/data/titles.csv')
+    merged = df.merge(titles, left_on = 'Title', right_on = 'title', how = 'inner')
+    cols_to_drop = ['type', 'production_countries', 'imdb_id', 'age_certification', 
+                    'id', 'title', 'seasons', 'tmdb_popularity']
+    merged = merged.drop(cols_to_drop, axis = 1)
+    return merged
 
 def overlap_merge(df1, df2):
     '''
     Function that merges two users watch histories to find overlap
     '''
     # merge on 'History'
+    dfNew = df1.merge(df2, how = 'inner', left_on = 'History', right_on = 'History', suffixes=('', '_y'))
+    dfNew = dfNew.drop(dfNew.filter(regex='_y$').columns, axis=1)
+    return dfNew
 
+def most_watched_tv(df):
+    '''
+    Plots 10 most watched TV shows (measured in minutes) in given dataframe
+    Returns a Plotly bar graph
+    '''
+    df = df[df['Type']=='TV']
+    df = df.groupby('Title').sum()
+    df = df.reset_index()
+    
+    df = df.sort_values(by='runtime', ascending= False)
+    # extract 10 most similar shows
+    df = df.head(10)
+    
+    fig = px.bar(data_frame= df,
+             x= "runtime",
+             y= "Title",
+             # text= "num_shared_actors",
+             labels= {"runtime": "Minutes Watched"},
+             text_auto= True)
+    fig.update_traces(hovertemplate='Total Watch Time: %{x} mins')
+    return fig
+
+def total_minutes(df):
+    '''
+    Function that plots pie chart of total minutes watched for tv vs movies
+    Returns a plotly pie chart
+    '''
+    fig = px.pie(df, values='runtime', names='Type', hole=.5)
+    fig.update_traces(hovertemplate='Total Watch Time: %{value} mins')
+    return fig
