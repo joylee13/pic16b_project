@@ -59,7 +59,6 @@ def create_blend():
     name2 = request.form['name2']
     return redirect(url_for('insights', name1=name1, name2=name2))
 
-
 # Database Organization
 def get_user(username): 
     """
