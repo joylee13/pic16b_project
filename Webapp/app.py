@@ -45,6 +45,18 @@ def insights():
     # 5. call all common-info plot functions
     # https://towardsdatascience.com/web-visualization-with-plotly-and-flask-3660abf9c946
 
+    df1 = get_history('name1')
+    df2 = get_history('name2')
+    df1 = netflix_merge(df1)
+    df2 = netflix_merge(df2)
+
+    most_watched_tv(df1)
+    most_watched_tv(df2)
+
+    df = overlap_merge(df1, df2)
+
+    total_minutes(df)
+
     return render_template('insights.html',
                            name1=request.args.get('name1'),
                            name2=request.args.get('name2'))
