@@ -3,6 +3,8 @@ import os
 from os.path import join, dirname, realpath
 import sqlite3
 import pandas as pd
+import json
+import plotly
 import plotly.express as px
 
 app = Flask(__name__)
@@ -52,16 +54,26 @@ def insights():
     df1 = netflix_merge(df1)
     df2 = netflix_merge(df2)
 
-    most_watched_tv(df1)
-    most_watched_tv(df2)
+    fig = most_watched_tv(df1)
+    graphJSON_tv1 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    fig = most_watched_tv(df2)
+    graphJSON_tv2 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
-    df = overlap_merge(df1, df2)
+    fig = total_minutes(df1)
+    graphJSON_minutes1 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    fig = total_minutes(df2)
+    graphJSON_minutes2 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
-    total_minutes(df)
+    # df = overlap_merge(df1, df2)
+    # total_minutes(df)
 
     return render_template('insights.html',
                            name1=name1,
-                           name2=name2)
+                           name2=name2,
+                           graphJSON_tv1 = graphJSON_tv1,
+                           graphJSON_tv2 = graphJSON_tv2,
+                           graphJSON_minutes1 = graphJSON_minutes1,
+                           graphJSON_minutes2 = graphJSON_minutes2)
 
 @app.route("/blend/")
 def blend():

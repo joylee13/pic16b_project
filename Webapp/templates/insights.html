@@ -66,6 +66,11 @@ body,h1,h2,h3,h4,h5,h6 {font-family: "Karma", sans-serif}
     <div class="w3-padding-32">
       <h4><b>Visualizations</b></h4>
       <p>Display the visualizations here!</p>
+    </div>
+    <div id="chart1" class="chart"></div>
+    <div id="chart2" class="chart"></div>
+    <div id="chart3" class="chart"></div>
+    <div id="chart4" class="chart"></div>
   </div>
   <hr>
   
@@ -84,4 +89,20 @@ function w3_close() {
 </script>
 
 </body>
+
+<script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+<script type='text/javascript'>
+  var graphs = {{graphJSON_tv1 | safe}};
+  Plotly.plot('chart1',graphs,{});
+
+  var graphs = {{graphJSON_tv2 | safe}};
+  Plotly.plot('chart2',graphs,{});
+
+  var graphs = {{graphJSON_minutes1 | safe}};
+  Plotly.plot('chart3',graphs,{});
+
+  var graphs = {{graphJSON_minutes2 | safe}};
+  Plotly.plot('chart4',graphs,{});
+</script>
+
 </html>
