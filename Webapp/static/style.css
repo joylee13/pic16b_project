@@ -55,6 +55,10 @@ h3{
     color: rgba(255, 255, 255, 0.8);
 }
 
+h4{
+    color: rgba(255, 255, 255, 0.8);
+}
+
 ul{
     color: rgba(255, 255, 255, 0.8);
 }
@@ -80,3 +84,15 @@ nav li{
     padding-right: 30px;
     display: inline;
 }
+
+.column {
+    float: left;
+    width: 50%;
+  }
+  
+  /* Clear floats after the columns */
+  .row:after {
+    content: "";
+    display: table;
+    clear: both;
+  }

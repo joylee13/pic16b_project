@@ -202,7 +202,7 @@ def netflix_merge(df):
     titles = pd.read_csv('static/data/titles.csv')
     merged = df.merge(titles, left_on = 'Title', right_on = 'title', how = 'inner')
     cols_to_drop = ['type', 'production_countries', 'imdb_id', 'age_certification', 
-                    'id', 'title', 'seasons', 'tmdb_popularity']
+                    'title', 'seasons', 'tmdb_popularity']
     merged = merged.drop(cols_to_drop, axis = 1)
     return merged
 
@@ -233,7 +233,9 @@ def top_tv(df):
              y= "Title",
              # text= "num_shared_actors",
              labels= {"runtime": "Minutes Watched"},
-             text_auto= True)
+             text_auto= True,
+             width = 600,
+             height = 400)
     fig.update_traces(hovertemplate='Total Watch Time: %{x} mins')
     return fig
 
@@ -242,7 +244,7 @@ def total_minutes(df):
     Function that plots pie chart of total minutes watched for tv vs movies
     Returns a plotly pie chart
     '''
-    fig = px.pie(df, values='runtime', names='Type', hole=.5)
+    fig = px.pie(df, values='runtime', names='Type', hole=.5, width=600, height=400)
     fig.update_traces(hovertemplate='Total Watch Time: %{value} mins')
     return fig
 
@@ -268,7 +270,7 @@ def top_genres(df):
     top_genre = s.idxmax()
     df = pd.DataFrame(s.reset_index())
 
-    fig = px.pie(df, values=0, names='index', hole=.5)
+    fig = px.pie(df, values=0, names='index', hole=.5, height=400, width=600)
     fig.update_traces(hovertemplate='Number of Minutes Watched: %{value}')
     return fig, top_genre
 
@@ -276,7 +278,7 @@ def top_actors(df):
     '''
     Plots 10 most frequently appearing actors
     Returns a Plotly bar graph'''
-    cast = pd.read_csv("credits.csv")
+    cast = pd.read_csv("static/data/credits.csv")
     cast = cast[cast['role']=='ACTOR']
     df = df.merge(cast, how='left', left_on='id', right_on='id')
 
@@ -289,5 +291,7 @@ def top_actors(df):
                 y= "name",
                 # text= "num_shared_actors",
                 labels= {"Title": "Number of Appearances"},
-                text_auto= True)
+                text_auto= True,
+                height=400,
+                width=600)
     return fig
