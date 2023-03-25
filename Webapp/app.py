@@ -54,18 +54,36 @@ def insights():
     df1 = netflix_merge(df1)
     df2 = netflix_merge(df2)
 
-    fig = most_watched_tv(df1)
-    graphJSON_tv1 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-    fig = most_watched_tv(df2)
-    graphJSON_tv2 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-
     fig = total_minutes(df1)
     graphJSON_minutes1 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     fig = total_minutes(df2)
     graphJSON_minutes2 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
-    # df = overlap_merge(df1, df2)
-    # total_minutes(df)
+    fig = top_tv(df1)
+    graphJSON_tv1 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    fig = top_tv(df2)
+    graphJSON_tv2 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+    fig = top_actors(df1)
+    graphJSON_actors1 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    fig = top_actors(df2)
+    graphJSON_actors2 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+    fig, top1 = top_genres(df1)
+    graphJSON_genres1 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    fig, top2 = top_genres(df2)
+    graphJSON_genres2 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+    df = overlap_merge(df1, df2)
+
+    fig = top_tv(df)
+    graphJSON_tv = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+    fig = top_actors(df)
+    graphJSON_actors = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+    fig, top_genre = top_genres(df)
+    graphJSON_genre = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
     return render_template('insights.html',
                            name1=name1,
@@ -73,7 +91,15 @@ def insights():
                            graphJSON_tv1 = graphJSON_tv1,
                            graphJSON_tv2 = graphJSON_tv2,
                            graphJSON_minutes1 = graphJSON_minutes1,
-                           graphJSON_minutes2 = graphJSON_minutes2)
+                           graphJSON_minutes2 = graphJSON_minutes2,
+                           graphJSON_actors1 = graphJSON_actors1,
+                           graphJSON_actors2 = graphJSON_actors2,
+                           graphJSON_genres1 = graphJSON_genres1,
+                           graphJSON_genres2 = graphJSON_genres2,
+                           graphJSON_tv = graphJSON_tv,
+                           graphJSON_actors = graphJSON_actors,
+                           graphJSON_genre = graphJSON_genre,
+                           top_genre = top_genre)
 
 @app.route("/blend/")
 def blend():
@@ -189,7 +215,7 @@ def overlap_merge(df1, df2):
     dfNew = dfNew.drop(dfNew.filter(regex='_y$').columns, axis=1)
     return dfNew
 
-def most_watched_tv(df):
+def top_tv(df):
     '''
     Plots 10 most watched TV shows (measured in minutes) in given dataframe
     Returns a Plotly bar graph
@@ -218,4 +244,50 @@ def total_minutes(df):
     '''
     fig = px.pie(df, values='runtime', names='Type', hole=.5)
     fig.update_traces(hovertemplate='Total Watch Time: %{value} mins')
+    return fig
+
+def top_genres(df):
+    '''
+    Plots breakdown of genres (measured in minutes) 
+    Returns a Plotly bar graph as well as the top genre
+    '''
+    df['genres'] = df['genres'].apply(lambda x: x.replace('\'', ''))
+    df['genres'] = df['genres'].apply(lambda x: x.replace('[', ''))
+    df['genres'] = df['genres'].apply(lambda x: x.replace(']', ''))
+    df['genres'] = df['genres'].apply(lambda x: x.replace(' ', ''))
+
+    temp = df['genres'].str.split(',', expand = True)
+    genre_col_list = ['genre_' + str(i) for i in range(len(temp.columns))]
+    temp.columns = genre_col_list
+    df = pd.concat([df, temp], axis = 1)
+
+    s = pd.Series()
+    for i in genre_col_list:
+        s = s.add(df.groupby(i).sum()['runtime'], fill_value=0)
+    
+    top_genre = s.idxmax()
+    df = pd.DataFrame(s.reset_index())
+
+    fig = px.pie(df, values=0, names='index', hole=.5)
+    fig.update_traces(hovertemplate='Number of Minutes Watched: %{value}')
+    return fig, top_genre
+
+def top_actors(df):
+    '''
+    Plots 10 most frequently appearing actors
+    Returns a Plotly bar graph'''
+    cast = pd.read_csv("credits.csv")
+    cast = cast[cast['role']=='ACTOR']
+    df = df.merge(cast, how='left', left_on='id', right_on='id')
+
+    df = df.groupby('name').count()['Title'].reset_index()
+    df = df.sort_values(by='Title', ascending= False)
+    df = df.head(10)
+
+    fig = px.bar(data_frame= df,
+                x= "Title",
+                y= "name",
+                # text= "num_shared_actors",
+                labels= {"Title": "Number of Appearances"},
+                text_auto= True)
     return fig

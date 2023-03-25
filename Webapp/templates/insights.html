@@ -92,17 +92,38 @@ function w3_close() {
 
 <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
 <script type='text/javascript'>
-  var graphs = {{graphJSON_tv1 | safe}};
+  var graphs = {{graphJSON_minutes1 | safe}};
   Plotly.plot('chart1',graphs,{});
 
-  var graphs = {{graphJSON_tv2 | safe}};
+  var graphs = {{graphJSON_minutes2 | safe}};
   Plotly.plot('chart2',graphs,{});
 
-  var graphs = {{graphJSON_minutes1 | safe}};
+  var graphs = {{graphJSON_tv1 | safe}};
   Plotly.plot('chart3',graphs,{});
 
-  var graphs = {{graphJSON_minutes2 | safe}};
+  var graphs = {{graphJSON_tv2 | safe}};
   Plotly.plot('chart4',graphs,{});
+
+  var graphs = {{graphJSON_actors1 | safe}};
+  Plotly.plot('chart5',graphs,{});
+
+  var graphs = {{graphJSON_actors2 | safe}};
+  Plotly.plot('chart6',graphs,{});
+
+  var graphs = {{graphJSON_genres1 | safe}};
+  Plotly.plot('chart7',graphs,{});
+
+  var graphs = {{graphJSON_genres2 | safe}};
+  Plotly.plot('chart8',graphs,{});
+
+  var graphs = {{graphJSON_tv | safe}};
+  Plotly.plot('chart9',graphs,{});
+
+  var graphs = {{graphJSON_actors | safe}};
+  Plotly.plot('chart10',graphs,{});
+
+  var graphs = {{graphJSON_genre | safe}};
+  Plotly.plot('chart11',graphs,{});
 </script>
 
 </html>
