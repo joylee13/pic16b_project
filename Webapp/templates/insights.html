@@ -36,36 +36,21 @@ body,h1,h2,h3,h4,h5,h6 {font-family: "Karma", sans-serif}
 
   <!-- First Photo Grid-->
   <div class="w3-row-padding w3-padding-16 w3-center" id="recs">
-    <div class="w3-quarter">
-      <img src="https://upload.wikimedia.org/wikipedia/en/4/48/How_I_Met_Your_Mother_Season_8_DVD_Cover.jpg" alt="Show" style="width:100%">
-      <h3>Recommended Show: How I Met Your Mother</h3>
-      <p>Based on your watch history and preference, for sitcoms, this is the tv show you guys should watch together.</p>
-    </div>
-    <div class="w3-quarter">
-      <img src="https://upload.wikimedia.org/wikipedia/en/8/8a/The_Lord_of_the_Rings_The_Fellowship_of_the_Ring_%282001%29.jpg" alt="Movie1" style="width:100%">
-      <h3>Recommended Movie 1: The Lord of The Rings: The Fellowship of the Ring</h3>
-      <p>Random example. Can replace with the covers for movies that the system recommended with our blends!</p>
-    </div>
-    <div class="w3-quarter">
-      <img src="/w3images/cherries.jpg" alt="Movie2" style="width:100%">
-      <h3>Recommended Movie 2: (insert title)</h3>
-      <p>Insert Text</p>
-    </div>
-    <div class="w3-quarter">
-      <img src="/w3images/wine.jpg" alt="Movie3" style="width:100%">
-      <h3>Recommended Movie 2: (insert title)</h3>
-      <p>Insert Text</p>
-    </div>
+    <h2>Here are our top 5 recs for you!</h2>
+    <ol>
+      <li><h3>{{list_recommended_titles[0]}}</h3></li>
+      <li><h3>{{list_recommended_titles[1]}}</h3></li>
+      <li><h3>{{list_recommended_titles[2]}}</h3></li>
+      <li><h3>{{list_recommended_titles[3]}}</h3></li>
+      <li><h3>{{list_recommended_titles[4]}}</h3></li>
+    </ol>
   </div>
   
   <hr id="about">
 
   <!-- About Section -->
   <div class="w3-container w3-padding-32 w3-center">  
-    <h3>Your Insights</h3><br>
-    <div class="w3-padding-32">
-      <h4><b>Visualizations</b></h4>
-    </div>
+    <h3>Your Insights!</h3><br>
     <table class="columns">
       <tr>
         <td><h4 style="color:white;">What {{name1}} has watched</h4></td>
@@ -99,7 +84,22 @@ body,h1,h2,h3,h4,h5,h6 {font-family: "Karma", sans-serif}
         <td><div id="chart7" style="border: 1px solid #ccc"></div></td>
         <td><div id="chart8" style="border: 1px solid #ccc"></div></td>
       </tr>
-    </table>  
+    </table>
+    <br>
+    <br>
+    <h4 style="color:white; text-align: left;">Here are the top TV shows both of you love watching!</h4>
+    <div id="chart9"></div>
+    <br>
+    <h4 style="color:white; text-align: left;">Here are the actors y'all love seeing on screen!</h4>
+    <div id="chart10"></div>
+    <br>
+    <h4 style="color:white; text-align: left;">Here are the top genres shows y'all are addicted to!</h4>
+    <table>
+      <tr>
+        <td><div id="chart11" style="border: 1px solid #ccc"></div></td>
+        <td><h4 style="color:white; text-align: right;">Your top genre is: {{top_genre}}!</h4></td>
+      </tr>
+    </table>
   </div>
   <hr>
   
@@ -145,14 +145,14 @@ function w3_close() {
   var graphs = {{graphJSON_genres2 | safe}};
   Plotly.plot('chart8',graphs,{});
 
-//   var graphs = {{graphJSON_tv | safe}};
-//   Plotly.plot('chart9',graphs,{});
+  var graphs = {{graphJSON_tv | safe}};
+  Plotly.plot('chart9',graphs,{});
 
-//   var graphs = {{graphJSON_actors | safe}};
-//   Plotly.plot('chart10',graphs,{});
+  var graphs = {{graphJSON_actors | safe}};
+  Plotly.plot('chart10',graphs,{});
 
-//   var graphs = {{graphJSON_genre | safe}};
-//   Plotly.plot('chart11',graphs,{});
+  var graphs = {{graphJSON_genre | safe}};
+  Plotly.plot('chart11',graphs,{});
  </script>
 
 </html>

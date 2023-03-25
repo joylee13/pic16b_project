@@ -6,15 +6,9 @@ import pandas as pd
 import json
 import plotly
 import plotly.express as px
-
-import json
 import numpy as np
 
 app = Flask(__name__)
-
-# Upload folder
-UPLOAD_FOLDER = 'static/files'
-app.config['UPLOAD_FOLDER'] =  UPLOAD_FOLDER
 
 DB_NAME = 'static/data/users.db'
 
@@ -42,31 +36,22 @@ def upload_file():
 
 @app.route("/insights/")
 def insights():
-    # CALL ALL PROCESSING & PLOTTING FUNCTIONS HERE
-    # 1. df1 = get_history(name1) & df2 = get_history(name2)
-    # 2. df1 = netflix_merge(df1) & df2 = netflix_merge(df2)
-    # 3. call all individual-info plot functions
-    # 4. overlap_merge(df1, df2) [on the netflix_merge datasets]
-    # 5. call all common-info plot functions
-    # https://towardsdatascience.com/web-visualization-with-plotly-and-flask-3660abf9c946
-
     name1=request.args.get('name1')
     name2=request.args.get('name2')
-    df1 = get_history(name1)
-    df2 = get_history(name2)
-    df1 = netflix_merge(df1)
-    df2 = netflix_merge(df2)
+    df_1 = get_history(name1)
+    df_2 = get_history(name2)
+    df1 = netflix_merge(df_1)
+    df2 = netflix_merge(df_2)
 
     metadata = 'static/data/metadata_updated.json'
     glmer_scores = 'static/data/glmer.csv'
-    user_history1 = df1
-    user_history2 = df2
+    user_history1 = df_1
+    user_history2 = df_2
     movie_lens_dataset = 'static/data/titles_movielens.csv'
     master_matrix = 'static/data/masterlist_ml_matrix.csv'
     recommend_output = generate_two_user_recommendation(metadata, glmer_scores, user_history1, user_history2, movie_lens_dataset, master_matrix)
     
-    list_recommended_titles = recommend_ouput[2]
-    
+    list_recommended_titles = recommend_output[2]
     
     fig = total_minutes(df1)
     graphJSON_minutes1 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
@@ -114,7 +99,8 @@ def insights():
                            graphJSON_actors = graphJSON_actors,
                            graphJSON_genre = graphJSON_genre,
                            top_genre = top_genre, 
-                           list_recommended_titles=list_recommended_titles)
+                           list_recommended_titles=list_recommended_titles
+                           )
 
 @app.route("/blend/")
 def blend():
@@ -325,7 +311,7 @@ def generate_item_id(df_user, movie_lens_csv):
     outputs:
         - item_ids: the list of all item_ids as desired
     '''
-    df_movies = df[df.Type != 'TV']
+    df_movies = df_user[df_user.Type != 'TV']
     df_movies = pd.DataFrame(df_movies,columns = ['History', 'release_year'])
     df_mltitles = pd.read_csv(movie_lens_csv)
     df_merge = df_mltitles[df_mltitles.movie_title.isin(df_movies.History)]
