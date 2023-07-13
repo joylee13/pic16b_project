@@ -43,15 +43,17 @@ def insights():
     df1 = netflix_merge(df_1)
     df2 = netflix_merge(df_2)
 
-    metadata = 'static/data/metadata_updated.json'
-    glmer_scores = 'static/data/glmer.csv'
-    user_history1 = df_1
-    user_history2 = df_2
-    movie_lens_dataset = 'static/data/titles_movielens.csv'
-    master_matrix = 'static/data/masterlist_ml_matrix.csv'
-    recommend_output = generate_two_user_recommendation(metadata, glmer_scores, user_history1, user_history2, movie_lens_dataset, master_matrix)
-    
-    list_recommended_titles = recommend_output[2]
+    df1_movies = get_movie_list(df1)
+    df2_movies = get_movie_list(df2)
+
+    df1_top_movies = get_top_movies(df1_movies)
+    df2_top_movies = get_top_movies(df2_movies)
+
+    netflix_recs1 = get_netflix_recs(df1_top_movies)
+    netflix_recs2 = get_netflix_recs(df2_top_movies)
+
+    not_netflix_recs1 = get_not_netflix_recs(df1_top_movies)
+    not_netflix_recs2 = get_not_netflix_recs(df2_top_movies)
     
     fig = total_minutes(df1)
     graphJSON_minutes1 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
@@ -84,6 +86,7 @@ def insights():
     fig, top_genre = top_genres(df)
     graphJSON_genre = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
+    # add movie and tv recs
     return render_template('insights.html',
                            name1=name1,
                            name2=name2,
@@ -98,8 +101,7 @@ def insights():
                            graphJSON_tv = graphJSON_tv,
                            graphJSON_actors = graphJSON_actors,
                            graphJSON_genre = graphJSON_genre,
-                           top_genre = top_genre, 
-                           list_recommended_titles=list_recommended_titles
+                           top_genre = top_genre,
                            )
 
 @app.route("/blend/")
@@ -202,7 +204,7 @@ def netflix_merge(df):
     '''
     titles = pd.read_csv('static/data/titles.csv')
     merged = df.merge(titles, left_on = 'Title', right_on = 'title', how = 'inner')
-    cols_to_drop = ['type', 'production_countries', 'imdb_id', 'age_certification', 
+    cols_to_drop = ['production_countries', 'imdb_id', 'age_certification', 
                     'title', 'seasons', 'tmdb_popularity']
     merged = merged.drop(cols_to_drop, axis = 1)
     return merged
@@ -297,306 +299,393 @@ def top_actors(df):
                 width=600)
     return fig
 
+##########
 
+# create a function that takes in movie title as input and returns a list of the most similar movies
+def get_recommendations(title, n, cosine_sim, df_movies):
+    
+    # get the index of the movie that matches the title
+    movie_index = df_movies[df_movies.title==title].new_id.values[0]
+    
+    # get the pairwsie similarity scores of all movies with that movie and sort the movies based on the similarity scores
+    sim_scores_all = sorted(list(enumerate(cosine_sim[movie_index])), key=lambda x: x[1], reverse=True)
+    
+    # checks if recommendations are limited
+    if n > 0:
+        sim_scores_all = sim_scores_all[1:n+1]
+        
+    # get the movie indices of the top similar movies
+    movie_indices = [i[0] for i in sim_scores_all]
+    scores = [i[1] for i in sim_scores_all]
+    
+    # return the top n most similar movies from the movies df
+    top_titles_df = pd.DataFrame(df_movies.iloc[movie_indices]['title'])
+    top_titles_df['sim_scores'] = scores
+    top_titles_df['ranking'] = range(1, len(top_titles_df) + 1)
+    
+    return top_titles_df, sim_scores_all
 
-def generate_item_id(df_user, movie_lens_csv):
-    '''
-    For a given user's user_history.csv file, generates a list of movie_ids
-    as per the Movie Lens's dataset
+def get_movie_list(df):
+    return list(df[df['type'] == "MOVIE"]['Title'])
 
-    inputs:
-        - df_user: user watch history df after netflix merge func
-        - movie_lens_csv: the path to the csv file containing the Movie Lens dataset
+def get_top_movies(movie_list):
+    similarity = np.load('static/data/movies_similarity.npy')
+    df_movies = pd.read_csv('static/data/movies.csv')
 
-    outputs:
-        - item_ids: the list of all item_ids as desired
-    '''
-    df_movies = df_user[df_user.Type != 'TV']
-    df_movies = pd.DataFrame(df_movies,columns = ['History', 'release_year'])
-    df_mltitles = pd.read_csv(movie_lens_csv)
-    df_merge = df_mltitles[df_mltitles.movie_title.isin(df_movies.History)]
-    df_merge.drop(columns = ['Unnamed: 0'], inplace = True)
-    df_merge.rename(columns = {'year': 'release_year'}, inplace = True)
-    df_movies.rename(columns = {'History': 'movie_title'}, inplace = True)
+    user_scores = pd.DataFrame(df_movies['title'])
+    user_scores['sim_scores'] = 0.0
 
-    def to_int(x):
+    # top number of scores to be considered for each movie
+    number_of_recommendations = 10000
+    for movie_name in movie_list:
         try:
-            return int(x)
-        except ValueError:
-            return np.nan
-    df_merge['release_year'] = df_merge['release_year'].apply(to_int)
-    df_output = pd.merge(df_movies,df_merge, how = 'inner', on = ['movie_title', 'release_year']).sort_values(by = 'movie_title')
+            top_titles_df, _ = get_recommendations(movie_name, number_of_recommendations,
+                                                similarity, df_movies)
+        except:
+            continue
+        # aggregate the scores
+        user_scores = pd.concat([user_scores, top_titles_df[['title', 'sim_scores']]]).groupby(['title'], as_index=False).sum({'sim_scores'})
 
-    item_ids = df_output['item_id'].values
-    item_ids = np.array(item_ids)
-    return item_ids
+    user_scores = user_scores[~user_scores['title'].isin(movie_list)]
+    return user_scores.sort_values(by='sim_scores', ascending=False)[:20]
 
+def get_netflix_recs(user_scores):
+    netflix = pd.read_csv('static/data/titles.csv')
+    netflix = netflix[['title', 'type', 'imdb_score', 'imdb_votes', 'tmdb_popularity', 'tmdb_score']]
+    netflix = netflix[netflix['type'] == 'MOVIE']
 
-def collect_master_df(glmer_scores):
-    '''
-    collects the master list of all glmer_scores as per the study referenced in this project and 
-    returns as a df along with a list of the unique titles
+    recs = netflix.merge(user_scores, how='inner', on='title')
+    recs = recs.sort_values(by='sim_scores', ascending=False)[:24]
     
-    inputs:
-        - glmer_scores: file path of where the glmer scores file is located
-    '''
-    df = pd.read_csv(glmer_scores)
-    titles = df['item_id'].unique()
-    return df, titles
+    rated_recs = recs[['title', 'imdb_score', 'imdb_votes']]
+    vote_counts = rated_recs[rated_recs['imdb_votes'].notnull()]['imdb_votes'].astype('int')
+    vote_averages = rated_recs[rated_recs['imdb_score'].notnull()]['imdb_score'].astype('int')
+    C = vote_averages.mean()
+    m = vote_counts.quantile(0.60)
+    qualified = rated_recs[(rated_recs['imdb_votes'] >= m) & (rated_recs['imdb_votes'].notnull())
+                    & (rated_recs['imdb_score'].notnull())]
+    qualified['imdb_votes'] = qualified['imdb_votes'].astype('int')
+    qualified['imdb_score'] = qualified['imdb_score'].astype('int')
+    qualified['wr'] = qualified.apply(weighted_rating, args=(m, C), axis=1)
+    qualified = qualified.sort_values('wr', ascending=False).head(20)
 
-def read_metadata(metadata):
-    lines = []
-    for line in open(metadata, 'r'):
-        lines.append(json.loads(line))
-    return lines
-
-def generate_user_watch_history(lines, titles, user_data = 'random', n = 20):
-    '''
-    Generates a dictionary containing the movie id titles along with their names
-
-    inputs:
-        - lines: a list of all lines in the metadata json file
-        - titles: a list of all unique titles in the scores data
-        - user_data: the item_ids of all user watched movies. Generates n random titles if not provided
-        - n: the number of titles to generate
-
-    outputs:
-        - sample_user: generates the desired dict
-    '''
-    if type(user_data) == str:
-        t = np.random.choice(titles,n)
+    if len(recs) > 5:
+        return list(qualified['title'])
     else:
-        t = user_data
-    sample_user = {}
-    for line in lines:
-        if line['item_id'] in t:
-            sample_user[line['item_id']] = line['title']
-    return sample_user
+        return list(recs['title'])
+
+def weighted_rating(x, m, C):
+    v = x['imdb_votes']
+    R = x['imdb_score']
+    return (v/(v+m) * R) + (m/(m+v) * C)
+
+def get_not_netflix_recs(user_scores):
+    netflix = pd.read_csv('static/data/titles.csv')
+    netflix = netflix[['title', 'type', 'imdb_score', 'imdb_votes', 'tmdb_popularity', 'tmdb_score']]
+    netflix = netflix[netflix['type'] == 'MOVIE']
+
+    not_netflix_recs = user_scores[~user_scores['title'].isin(netflix['title'])]
+    not_netflix_recs = not_netflix_recs.sort_values(by='sim_scores', ascending=False)[:20]
+    return list(not_netflix_recs['title'])
+
+# def generate_item_id(df_user, movie_lens_csv):
+#     '''
+#     For a given user's user_history.csv file, generates a list of movie_ids
+#     as per the Movie Lens's dataset
+
+#     inputs:
+#         - df_user: user watch history df after netflix merge func
+#         - movie_lens_csv: the path to the csv file containing the Movie Lens dataset
+
+#     outputs:
+#         - item_ids: the list of all item_ids as desired
+#     '''
+#     df_movies = df_user[df_user.Type != 'TV']
+#     df_movies = pd.DataFrame(df_movies,columns = ['History', 'release_year'])
+#     df_mltitles = pd.read_csv(movie_lens_csv)
+#     df_merge = df_mltitles[df_mltitles.movie_title.isin(df_movies.History)]
+#     df_merge.drop(columns = ['Unnamed: 0'], inplace = True)
+#     df_merge.rename(columns = {'year': 'release_year'}, inplace = True)
+#     df_movies.rename(columns = {'History': 'movie_title'}, inplace = True)
+
+#     def to_int(x):
+#         try:
+#             return int(x)
+#         except ValueError:
+#             return np.nan
+#     df_merge['release_year'] = df_merge['release_year'].apply(to_int)
+#     df_output = pd.merge(df_movies,df_merge, how = 'inner', on = ['movie_title', 'release_year']).sort_values(by = 'movie_title')
+
+#     item_ids = df_output['item_id'].values
+#     item_ids = np.array(item_ids)
+#     return item_ids
 
 
-def generate_user_history_tag(sample_user, df):
-    '''
-    Generates a matrix of an aggregation of tag scores for each title watched by a user
-    along with a list of all user watched titles for which scores do not exist
-
-    inputs:
-        - sample_user: list of all movie titles watched by a user
-        - df: the dataframe of tag_scores
-
-    outputs:
-        - errors: list of all user watched titles for which scores do not exist
-        - mat: the desired matrix
-    '''
-    sample_user_matrix = []
-    errors = []
-    for movie in sample_user.keys():
-        #skip if for some reason the movie does not contain all labels
-        if len(df[df.item_id == movie]) != 1084:
-            errors.append(movie)
-        #if the movie contains all label values, obtain the tag vector from the main df
-        else:
-            matrix = list(df[df.item_id == movie].score.values)
-            sample_user_matrix.append(matrix)
-
-    #turning the list of lists into a matrix as a 2D array
-    mat = np.array(sample_user_matrix)
-
-    return errors,mat
-
-
-def generate_user_pref_vector(mat, f = '2-norm'):
-    '''
-    Generates a user preference for each label as a vector, aggregating on the matrix
-    created by generate_user_history_tag() with function f applied
-
-    inputs:
-        - mat: the user matrix generated by generate_user_history_tag()
-        - f: the function to be applied to 
-
-    outputs:
-        - aggroot/agg: the preference vector after applying the desired function
-    '''
-    if f == '2-norm':
-        matsq = mat**2
-        agg = np.average(matsq, axis = 0)
-        aggroot = agg**0.5
-
-        return aggroot
+# def collect_master_df(glmer_scores):
+#     '''
+#     collects the master list of all glmer_scores as per the study referenced in this project and 
+#     returns as a df along with a list of the unique titles
     
-    else:
-        agg = []
+#     inputs:
+#         - glmer_scores: file path of where the glmer scores file is located
+#     '''
+#     df = pd.read_csv(glmer_scores)
+#     titles = df['item_id'].unique()
+#     return df, titles
 
-        for col in mat.T:
-            val = f(col)
-            agg.append(val)
+# def read_metadata(metadata):
+#     lines = []
+#     for line in open(metadata, 'r'):
+#         lines.append(json.loads(line))
+#     return lines
+
+# def generate_user_watch_history(lines, titles, user_data = 'random', n = 20):
+#     '''
+#     Generates a dictionary containing the movie id titles along with their names
+
+#     inputs:
+#         - lines: a list of all lines in the metadata json file
+#         - titles: a list of all unique titles in the scores data
+#         - user_data: the item_ids of all user watched movies. Generates n random titles if not provided
+#         - n: the number of titles to generate
+
+#     outputs:
+#         - sample_user: generates the desired dict
+#     '''
+#     if type(user_data) == str:
+#         t = np.random.choice(titles,n)
+#     else:
+#         t = user_data
+#     sample_user = {}
+#     for line in lines:
+#         if line['item_id'] in t:
+#             sample_user[line['item_id']] = line['title']
+#     return sample_user
+
+
+# def generate_user_history_tag(sample_user, df):
+#     '''
+#     Generates a matrix of an aggregation of tag scores for each title watched by a user
+#     along with a list of all user watched titles for which scores do not exist
+
+#     inputs:
+#         - sample_user: list of all movie titles watched by a user
+#         - df: the dataframe of tag_scores
+
+#     outputs:
+#         - errors: list of all user watched titles for which scores do not exist
+#         - mat: the desired matrix
+#     '''
+#     sample_user_matrix = []
+#     errors = []
+#     for movie in sample_user.keys():
+#         #skip if for some reason the movie does not contain all labels
+#         if len(df[df.item_id == movie]) != 1084:
+#             errors.append(movie)
+#         #if the movie contains all label values, obtain the tag vector from the main df
+#         else:
+#             matrix = list(df[df.item_id == movie].score.values)
+#             sample_user_matrix.append(matrix)
+
+#     #turning the list of lists into a matrix as a 2D array
+#     mat = np.array(sample_user_matrix)
+
+#     return errors,mat
+
+
+# def generate_user_pref_vector(mat, f = '2-norm'):
+#     '''
+#     Generates a user preference for each label as a vector, aggregating on the matrix
+#     created by generate_user_history_tag() with function f applied
+
+#     inputs:
+#         - mat: the user matrix generated by generate_user_history_tag()
+#         - f: the function to be applied to 
+
+#     outputs:
+#         - aggroot/agg: the preference vector after applying the desired function
+#     '''
+#     if f == '2-norm':
+#         matsq = mat**2
+#         agg = np.average(matsq, axis = 0)
+#         aggroot = agg**0.5
+
+#         return aggroot
+    
+#     else:
+#         agg = []
+
+#         for col in mat.T:
+#             val = f(col)
+#             agg.append(val)
         
-        return agg
+#         return agg
     
-def generate_master_matrix(df, titles):
-    '''
-    Generates the master matrix - a transformation of the dataframe generated 
-    by collect_master_df(). Not used if instead the master matrix is stored separately
+# def generate_master_matrix(df, titles):
+#     '''
+#     Generates the master matrix - a transformation of the dataframe generated 
+#     by collect_master_df(). Not used if instead the master matrix is stored separately
 
-    inputs:
-        - df: the dataframe of label scores
-        - titles: the list of movie ids
+#     inputs:
+#         - df: the dataframe of label scores
+#         - titles: the list of movie ids
 
-    outputs:
-        - master_mat: the desired matrix
-    '''
-    master_mat = []
-    for movie in titles:
-        if len(df[df.item_id == movie]) != 1084:
-            print(f'error {movie}')
+#     outputs:
+#         - master_mat: the desired matrix
+#     '''
+#     master_mat = []
+#     for movie in titles:
+#         if len(df[df.item_id == movie]) != 1084:
+#             print(f'error {movie}')
 
-        else:
-            matrix = list(df[df.item_id == movie].score.values)
-            master_mat.append(matrix)
-    master_mat = np.array(master_mat)
+#         else:
+#             matrix = list(df[df.item_id == movie].score.values)
+#             master_mat.append(matrix)
+#     master_mat = np.array(master_mat)
 
-    return master_mat
+#     return master_mat
 
 
-def generate_user_movie_interest(master_mat, user_tag_interest, g = '2-norm'):
-    '''
-    Generates an interest rating for each movie for a given user
+# def generate_user_movie_interest(master_mat, user_tag_interest, g = '2-norm'):
+#     '''
+#     Generates an interest rating for each movie for a given user
 
-    inputs:
-        - master_mat: the master mat either generated by generate_master_matrix() or stored as a txt file
-        - user_tag_interest: the user preference vector generated by generate_user_pref_vector()
-        - g: the desired aggregation function. defaults to the 2-norm function (euclid distance)
+#     inputs:
+#         - master_mat: the master mat either generated by generate_master_matrix() or stored as a txt file
+#         - user_tag_interest: the user preference vector generated by generate_user_pref_vector()
+#         - g: the desired aggregation function. defaults to the 2-norm function (euclid distance)
 
-    outputs:
-        - dist: a list contiaining the preferences for each movie in order of the movie_items
-    '''
-    if g == '2-norm':
-        rows, _ = master_mat.shape
-        dist = []
-        for r in range(rows):
-            d = np.linalg.norm(user_tag_interest-master_mat[r])
-            dist.append(d)
-        return dist
+#     outputs:
+#         - dist: a list contiaining the preferences for each movie in order of the movie_items
+#     '''
+#     if g == '2-norm':
+#         rows, _ = master_mat.shape
+#         dist = []
+#         for r in range(rows):
+#             d = np.linalg.norm(user_tag_interest-master_mat[r])
+#             dist.append(d)
+#         return dist
     
-    else:
-        dist = []
-        for i in master_mat:
-            val = g(user_tag_interest,i)
-            dist.append(val)
-        return dist
+#     else:
+#         dist = []
+#         for i in master_mat:
+#             val = g(user_tag_interest,i)
+#             dist.append(val)
+#         return dist
 
 
-def generate_recommendation(dists, lines, titles, n_recs = 10, users = 1):
-    '''
-    Generates movie recommendation after all necessary components collected, for one or two user
+# def generate_recommendation(dists, lines, titles, n_recs = 10, users = 1):
+#     '''
+#     Generates movie recommendation after all necessary components collected, for one or two user
 
-    inputs:
-        - dists: an array containing the movie preference vectors for each user
-        - lines: the metadata entries stored as lines
-        - titles: a list of all movie ids
-        - n_recs: desired number of movies to be recommended
-        - users: whether recommendations are desired for 1 or two users
+#     inputs:
+#         - dists: an array containing the movie preference vectors for each user
+#         - lines: the metadata entries stored as lines
+#         - titles: a list of all movie ids
+#         - n_recs: desired number of movies to be recommended
+#         - users: whether recommendations are desired for 1 or two users
 
-    output:
-        - a dataframe containing the top n recommended movies, a score for how strongly 
-          the movie is recommended, and other cols
-    '''
-    if users == 1:
-        dfresult = pd.DataFrame(titles, columns = ['movie_id'])
-        dfresult['score1'] = dists[0]
-        dfresult = dfresult.sort_values(by = ['score1'], ascending = False)
-        dfrecommend = dfresult[0:n_recs]
+#     output:
+#         - a dataframe containing the top n recommended movies, a score for how strongly 
+#           the movie is recommended, and other cols
+#     '''
+#     if users == 1:
+#         dfresult = pd.DataFrame(titles, columns = ['movie_id'])
+#         dfresult['score1'] = dists[0]
+#         dfresult = dfresult.sort_values(by = ['score1'], ascending = False)
+#         dfrecommend = dfresult[0:n_recs]
         
-        movie_titles = {}
-        for line in lines:
-            if line['item_id'] in dfrecommend.movie_id.values:
+#         movie_titles = {}
+#         for line in lines:
+#             if line['item_id'] in dfrecommend.movie_id.values:
 
-                movie_titles[line['item_id']] = line['title']
+#                 movie_titles[line['item_id']] = line['title']
         
-        dfrecommend['movie_title'] = dfrecommend['movie_id'].map(movie_titles)
-        dfrecommend.reset_index(inplace = True)
-        return dfrecommend
+#         dfrecommend['movie_title'] = dfrecommend['movie_id'].map(movie_titles)
+#         dfrecommend.reset_index(inplace = True)
+#         return dfrecommend
     
-    if users == 2:
-        dfresult = pd.DataFrame(titles, columns = ['movie_id'])
-        dfresult['score1'] = dists[0]
-        dfresult['score2'] = dists[1]
+#     if users == 2:
+#         dfresult = pd.DataFrame(titles, columns = ['movie_id'])
+#         dfresult['score1'] = dists[0]
+#         dfresult['score2'] = dists[1]
 
-        dfresult['average'] = (dfresult['score1'] + dfresult['score2'])/2
-        dfresult['dev'] = ((dfresult['score1']-dfresult['average'])**2) + ((dfresult['score2'] - dfresult['average'])**2)
-        dfresult = dfresult.sort_values(by = ['average'], ascending = False)
+#         dfresult['average'] = (dfresult['score1'] + dfresult['score2'])/2
+#         dfresult['dev'] = ((dfresult['score1']-dfresult['average'])**2) + ((dfresult['score2'] - dfresult['average'])**2)
+#         dfresult = dfresult.sort_values(by = ['average'], ascending = False)
 
-        dfrecommend = dfresult[0:2*n_recs]
-        dfrecommend = dfrecommend.sort_values(by= ['dev'], ascending = True)
-        dfrecommend = dfrecommend[0:n_recs]
+#         dfrecommend = dfresult[0:2*n_recs]
+#         dfrecommend = dfrecommend.sort_values(by= ['dev'], ascending = True)
+#         dfrecommend = dfrecommend[0:n_recs]
 
-        movie_titles = {}
-        for line in lines:
-            if line['item_id'] in dfrecommend.movie_id.values:
+#         movie_titles = {}
+#         for line in lines:
+#             if line['item_id'] in dfrecommend.movie_id.values:
 
-                movie_titles[line['item_id']] = line['title']
+#                 movie_titles[line['item_id']] = line['title']
         
-        dfrecommend['movie_title'] = dfrecommend['movie_id'].map(movie_titles)
-        dfrecommend.reset_index(inplace = True)
-        return dfrecommend
+#         dfrecommend['movie_title'] = dfrecommend['movie_id'].map(movie_titles)
+#         dfrecommend.reset_index(inplace = True)
+#         return dfrecommend
     
 
-def f(a):
-    '''
-    An implementation of a desired aggregation function. Used to aggregate preference labels
+# def f(a):
+#     '''
+#     An implementation of a desired aggregation function. Used to aggregate preference labels
 
-    inputs:
-        - a: an array/list containing all values to be aggregated
+#     inputs:
+#         - a: an array/list containing all values to be aggregated
     
-    outputs:
-        - result: a final value after aggregation
-    '''
-    result = 0
-    for val in a:
-        result+= val**0.5
+#     outputs:
+#         - result: a final value after aggregation
+#     '''
+#     result = 0
+#     for val in a:
+#         result+= val**0.5
     
-    result = result/np.size(a)
-    result = result**2
-    return result
+#     result = result/np.size(a)
+#     result = result**2
+#     return result
 
-def generate_two_user_recommendation(metadata, glmer_scores, user_history1, user_history2, movie_lens_dataset, master_matrix):
-    '''
-    Generates recommendations for two users based on their watch history
+# def generate_two_user_recommendation(metadata, glmer_scores, user_history1, user_history2, movie_lens_dataset, master_matrix):
+#     '''
+#     Generates recommendations for two users based on their watch history
 
-    inputs:
-        - metadata: the metadata file from the movielens dataset
-        - glmer_scores: the label scores from the ml dataset
-        - user_history1: user 1 history df
-        - user_history2: user 2 history df
-        - movie_lens_dataset: the path for the movie_lens_dataset
-        - master_matrix: the array of the master_matrix
+#     inputs:
+#         - metadata: the metadata file from the movielens dataset
+#         - glmer_scores: the label scores from the ml dataset
+#         - user_history1: user 1 history df
+#         - user_history2: user 2 history df
+#         - movie_lens_dataset: the path for the movie_lens_dataset
+#         - master_matrix: the array of the master_matrix
 
-    output:
-        - errors: a list of movies watched by users that do not have label scores (entry 0 is for user1, entry 1 is for user2)
-        - dfrecommend: a dataframe of recommended movie, with a metric score for how much user 1 prefers, user 2 prefers, and
-            how strongly recommended, along with other column information
-        - recommend: an array containing the movies recommended
-    '''
-    master_mat = np.loadtxt(master_matrix, delimiter = ',')
-    df, titles = collect_master_df(glmer_scores)
-    lines = read_metadata(metadata)
+#     output:
+#         - errors: a list of movies watched by users that do not have label scores (entry 0 is for user1, entry 1 is for user2)
+#         - dfrecommend: a dataframe of recommended movie, with a metric score for how much user 1 prefers, user 2 prefers, and
+#             how strongly recommended, along with other column information
+#         - recommend: an array containing the movies recommended
+#     '''
+#     master_mat = np.loadtxt(master_matrix, delimiter = ',')
+#     df, titles = collect_master_df(glmer_scores)
+#     lines = read_metadata(metadata)
     
-    sample_user1 = generate_item_id(user_history1, movie_lens_dataset)
-    user1 = generate_user_watch_history(lines, titles, sample_user1)
-    errors_user1, mat1 = generate_user_history_tag(user1,df)
-    agg1 = generate_user_pref_vector(mat1, f = f)
-    dist1 = generate_user_movie_interest(master_mat, agg1)
+#     sample_user1 = generate_item_id(user_history1, movie_lens_dataset)
+#     user1 = generate_user_watch_history(lines, titles, sample_user1)
+#     errors_user1, mat1 = generate_user_history_tag(user1,df)
+#     agg1 = generate_user_pref_vector(mat1, f = f)
+#     dist1 = generate_user_movie_interest(master_mat, agg1)
 
-    sample_user2 = generate_item_id(user_history2, movie_lens_dataset)
-    user2 = generate_user_watch_history(lines, titles, sample_user2)
-    errors_user2, mat2 = generate_user_history_tag(user2,df)
-    agg2 = generate_user_pref_vector(mat2, f = f)
-    dist2 = generate_user_movie_interest(master_mat, agg2)
+#     sample_user2 = generate_item_id(user_history2, movie_lens_dataset)
+#     user2 = generate_user_watch_history(lines, titles, sample_user2)
+#     errors_user2, mat2 = generate_user_history_tag(user2,df)
+#     agg2 = generate_user_pref_vector(mat2, f = f)
+#     dist2 = generate_user_movie_interest(master_mat, agg2)
 
-    dfrecommend= generate_recommendation([dist1, dist2], lines, titles, n_recs = 20, users = 2)
+#     dfrecommend= generate_recommendation([dist1, dist2], lines, titles, n_recs = 20, users = 2)
 
-    errors = [errors_user1, errors_user2]
-    recommend = dfrecommend['movie_title'].values
-    return errors, dfrecommend, recommend
+#     errors = [errors_user1, errors_user2]
+#     recommend = dfrecommend['movie_title'].values
+#     return errors, dfrecommend, recommend
 
 
-#######################
+# #######################
