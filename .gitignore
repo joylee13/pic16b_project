@@ -4,3 +4,5 @@ Webapp/static/data/glmer.csv
 MLdata/
 recommender_system_2/movies_similarity.npy
 Webapp/static/data/movies_similarity.npy
+recommender_system_2/tv_similarity.npy
+Webapp/static/data/tv_similarity.npy

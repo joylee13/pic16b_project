@@ -54,6 +54,16 @@ def insights():
 
     not_netflix_recs1 = get_not_netflix_recs(df1_top_movies)
     not_netflix_recs2 = get_not_netflix_recs(df2_top_movies)
+
+    common_movies = get_common_movies(df1_top_movies, df2_top_movies)
+
+    df1_tv = get_tv_list(df1)
+    df2_tv = get_tv_list(df2)
+
+    recs1 = get_tv_recs(df1_tv)
+    recs2 = get_tv_recs(df2_tv)
+
+    common_tv = get_common_tv(recs1, recs2)
     
     fig = total_minutes(df1)
     graphJSON_minutes1 = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
@@ -102,6 +112,9 @@ def insights():
                            graphJSON_actors = graphJSON_actors,
                            graphJSON_genre = graphJSON_genre,
                            top_genre = top_genre,
+                           netflix_recs1 = netflix_recs1,
+                           not_netflix_recs1 = not_netflix_recs1,
+                           common_tv = common_tv
                            )
 
 @app.route("/blend/")
@@ -387,6 +400,59 @@ def get_not_netflix_recs(user_scores):
     not_netflix_recs = user_scores[~user_scores['title'].isin(netflix['title'])]
     not_netflix_recs = not_netflix_recs.sort_values(by='sim_scores', ascending=False)[:20]
     return list(not_netflix_recs['title'])
+
+def get_common_movies(df1, df2):
+    return list(set(df1['title']).intersection(set(df2['title'])))
+
+def improved_recommendations(title, cosine_sim, tv):
+    tv = tv.reset_index()
+    indices = pd.Series(tv.index, index=tv['title'])
+
+    idx = indices[title]
+    sim_scores = list(enumerate(cosine_sim[idx]))
+    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+    sim_scores = sim_scores[1:26]
+    tv_indices = [i[0] for i in sim_scores]
+    
+    tv_df = tv.iloc[tv_indices][['title', 'imdb_score', 'imdb_votes']]
+    vote_counts = tv_df[tv_df['imdb_votes'].notnull()]['imdb_votes'].astype('int')
+    vote_averages = tv_df[tv_df['imdb_score'].notnull()]['imdb_score'].astype('int')
+    C = vote_averages.mean()
+    m = vote_counts.quantile(0.60)
+    qualified = tv_df[(tv_df['imdb_votes'] >= m) & (tv_df['imdb_votes'].notnull())
+                       & (tv_df['imdb_score'].notnull())]
+    qualified['imdb_votes'] = qualified['imdb_votes'].astype('int')
+    qualified['imdb_score'] = qualified['imdb_score'].astype('int')
+    qualified['wr'] = qualified.apply(weighted_rating, args=(m, C), axis=1)
+    qualified = qualified.sort_values('wr', ascending=False).head(20)
+    return qualified
+
+def get_tv_list(df):
+    return list(df[df['type'] == "SHOW"]['Title'])
+
+def get_tv_recs(tv_list):
+
+    # read in tv and similarity here
+    similarity = np.load('tv_similarity.npy')
+    tv = pd.read_csv('tv.csv')
+
+    user_scores = pd.DataFrame(tv['title'])
+    user_scores['wr'] = 0.0
+
+    for tv_name in tv_list:
+        try:
+            top_titles_df = improved_recommendations(tv_name, similarity, tv)
+        except:
+            continue
+        # aggregate the scores
+        user_scores = pd.concat([user_scores, top_titles_df[['title', 'wr']]]).groupby(['title'], as_index=False).sum({'wr'})
+
+    user_scores = user_scores[~user_scores['title'].isin(tv_list)]
+    user_scores = user_scores.sort_values(by='wr', ascending=False)[:30]
+    return list(user_scores['title'])
+
+def get_common_tv(recs1, recs2):
+    return list(set(recs1).intersection(set(recs2)))
 
 # def generate_item_id(df_user, movie_lens_csv):
 #     '''
