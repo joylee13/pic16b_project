@@ -6,3 +6,5 @@ recommender_system_2/movies_similarity.npy
 Webapp/static/data/movies_similarity.npy
 recommender_system_2/tv_similarity.npy
 Webapp/static/data/tv_similarity.npy
+recommender_system_2/netflix_movies_similarity.npy
+Webapp/static/data/netflix_movies_similarity.npy

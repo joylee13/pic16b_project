@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Insights</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Karma">
+<link rel="stylesheet" href="/static/style.css">
+<style>
+body,h1,h2,h3,h4,h5,h6 {font-family: "Karma", sans-serif}
+.w3-bar-block .w3-bar-item {padding:20px}
+</style>
+</head>
+<body>
+
+<!-- Sidebar (hidden by default) -->
+<nav class="w3-sidebar w3-bar-block w3-card w3-top w3-xlarge w3-animate-left" style="display:none;z-index:2;width:40%;min-width:300px" id="mySidebar">
+  <a href="javascript:void(0)" onclick="w3_close()"
+  class="w3-bar-item w3-button">Close</a>
+  <a href="#recs" onclick="w3_close()" class="w3-bar-item w3-button">Recommendations</a>
+  <a href="#insights" onclick="w3_close()" class="w3-bar-item w3-button">Insights</a>
+</nav>
+
+<!-- Top menu -->
+<div class="w3-top">
+  <div class="w3-black w3-xlarge" style="max-width:1200px;margin:auto">
+    <div class="w3-button w3-padding-16 w3-left" onclick="w3_open()">☰</div>
+    <div class="w3-center w3-padding-16">Your Blend!</div>
+  </div>
+</div>
+  
+<!-- !PAGE CONTENT! -->
+<div class="w3-main w3-content w3-padding" style="max-width:1200px;margin-top:100px">
+    <div style="background-color:#000000">
+  
+  <hr id="about">
+  <h3 style="color:white;">common tv: {{common_tv[0]}}</h3>
+  <!-- About Section -->
+  <div class="w3-container w3-padding-32 w3-center">  
+    <h3>Your Insights!</h3><br>
+    <table class="columns">
+      <tr>
+        <td><h4 style="color:white;">What {{name1}} has watched</h4></td>
+        <td><h4 style="color:white;">What {{name2}} has watched</h4></td>
+      </tr>
+      <tr>
+        <td><div id="chart1" style="border: 1px solid #ccc"></div></td>
+        <td><div id="chart2" style="border: 1px solid #ccc"></div></td>
+      </tr>
+      <tr>
+        <td><h4 style="color:white;">TV shows {{name1}} has watched the most!</h4></td>
+        <td><h4 style="color:white;">TV shows {{name2}} has watched the most!</h4></td>
+      </tr>
+      <tr>
+        <td><div id="chart3" style="border: 1px solid #ccc"></div></td>
+        <td><div id="chart4" style="border: 1px solid #ccc"></div></td>
+      </tr>
+      <tr>
+        <td><h4 style="color:white;">Actors {{name1}} can't their eyes off of!</h4></td>
+        <td><h4 style="color:white;">Actors {{name2}} can't their eyes off of!</h4></td>
+      </tr>
+      <tr>
+        <td><div id="chart5" style="border: 1px solid #ccc"></div></td>
+        <td><div id="chart6" style="border: 1px solid #ccc"></div></td>
+      </tr>
+      <tr>
+        <td><h4 style="color:white;">Genres {{name1}} likes to stick to!</h4></td>
+        <td><h4 style="color:white;">Genres {{name2}} likes to stick to!</h4></td>
+      </tr>
+      <tr>
+        <td><div id="chart7" style="border: 1px solid #ccc"></div></td>
+        <td><div id="chart8" style="border: 1px solid #ccc"></div></td>
+      </tr>
+    </table>
+    <br>
+    <br>
+    <h4 style="color:white; text-align: left;">Here are the top TV shows both of you love watching!</h4>
+    <div id="chart9"></div>
+    <br>
+    <h4 style="color:white; text-align: left;">Here are the actors y'all love seeing on screen!</h4>
+    <div id="chart10"></div>
+    <br>
+    <h4 style="color:white; text-align: left;">Here are the top genres shows y'all are addicted to!</h4>
+    <table>
+      <tr>
+        <td><div id="chart11" style="border: 1px solid #ccc"></div></td>
+        <td><h4 style="color:white; text-align: right;">Your top genre is: {{top_genre}}!</h4></td>
+      </tr>
+    </table>
+  </div>
+  <hr>
+  
+<!-- End page content -->
+</div>
+
+<script>
+// Script to open and close sidebar
+function w3_open() {
+  document.getElementById("mySidebar").style.display = "block";
+}
+ 
+function w3_close() {
+  document.getElementById("mySidebar").style.display = "none";
+}
+</script>
+
+</body>
+
+<script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+<script type='text/javascript'>
+  var graphs = {{graphJSON_minutes1 | safe}};
+  Plotly.plot('chart1',graphs,{});
+
+  var graphs = {{graphJSON_minutes2 | safe}};
+  Plotly.plot('chart2',graphs,{});
+
+  var graphs = {{graphJSON_tv1 | safe}};
+  Plotly.plot('chart3',graphs,{});
+
+  var graphs = {{graphJSON_tv2 | safe}};
+  Plotly.plot('chart4',graphs,{});
+
+  var graphs = {{graphJSON_actors1 | safe}};
+  Plotly.plot('chart5',graphs,{});
+
+  var graphs = {{graphJSON_actors2 | safe}};
+  Plotly.plot('chart6',graphs,{});
+
+  var graphs = {{graphJSON_genres1 | safe}};
+  Plotly.plot('chart7',graphs,{});
+
+  var graphs = {{graphJSON_genres2 | safe}};
+  Plotly.plot('chart8',graphs,{});
+
+  var graphs = {{graphJSON_tv | safe}};
+  Plotly.plot('chart9',graphs,{});
+
+  var graphs = {{graphJSON_actors | safe}};
+  Plotly.plot('chart10',graphs,{});
+
+  var graphs = {{graphJSON_genre | safe}};
+  Plotly.plot('chart11',graphs,{});
+ </script>
+
+</html>

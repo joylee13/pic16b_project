@@ -1,146 +1,207 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Insights</title>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Karma">
-<link rel="stylesheet" href="/static/style.css">
-<style>
-body,h1,h2,h3,h4,h5,h6 {font-family: "Karma", sans-serif}
-.w3-bar-block .w3-bar-item {padding:20px}
-</style>
+  <!-- Include the Plotly library -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      margin: 20px;
+    }
+    
+    .graph-container {
+      width: 45%;
+      height: 400px;
+      border: 1px solid #ccc;
+      align-items: center;
+      margin-left: auto;
+      margin-right: auto;
+      margin-top: 20px;
+    }
+
+    .flex-container {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+        display: flex;
+    }
+    
+    .space-around { 
+        justify-content: space-around; 
+    }
+    h2 {
+      text-align: center;
+    }
+
+    ol.common {
+    display: table; 
+    margin: 0 auto;
+    text-align: left;
+}
+  </style>
 </head>
 <body>
+  <h2>Here are your Netflix stats</h2>
 
-<!-- Sidebar (hidden by default) -->
-<nav class="w3-sidebar w3-bar-block w3-card w3-top w3-xlarge w3-animate-left" style="display:none;z-index:2;width:40%;min-width:300px" id="mySidebar">
-  <a href="javascript:void(0)" onclick="w3_close()"
-  class="w3-bar-item w3-button">Close</a>
-  <a href="#recs" onclick="w3_close()" class="w3-bar-item w3-button">Recommendations</a>
-  <a href="#insights" onclick="w3_close()" class="w3-bar-item w3-button">Insights</a>
-</nav>
-
-<!-- Top menu -->
-<div class="w3-top">
-  <div class="w3-black w3-xlarge" style="max-width:1200px;margin:auto">
-    <div class="w3-button w3-padding-16 w3-left" onclick="w3_open()">☰</div>
-    <div class="w3-center w3-padding-16">Your Blend!</div>
+  <div class="flex-container space-around">
+    <h1>{{name1}}</h1>
+    <h1>{{name2}}</h1>
   </div>
-</div>
-  
-<!-- !PAGE CONTENT! -->
-<div class="w3-main w3-content w3-padding" style="max-width:1200px;margin-top:100px">
-    <div style="background-color:#000000">
-  
-  <hr id="about">
 
-  <!-- About Section -->
-  <div class="w3-container w3-padding-32 w3-center">  
-    <h3>Your Insights!</h3><br>
-    <table class="columns">
-      <tr>
-        <td><h4 style="color:white;">What {{name1}} has watched</h4></td>
-        <td><h4 style="color:white;">What {{name2}} has watched</h4></td>
-      </tr>
-      <tr>
-        <td><div id="chart1" style="border: 1px solid #ccc"></div></td>
-        <td><div id="chart2" style="border: 1px solid #ccc"></div></td>
-      </tr>
-      <tr>
-        <td><h4 style="color:white;">TV shows {{name1}} has watched the most!</h4></td>
-        <td><h4 style="color:white;">TV shows {{name2}} has watched the most!</h4></td>
-      </tr>
-      <tr>
-        <td><div id="chart3" style="border: 1px solid #ccc"></div></td>
-        <td><div id="chart4" style="border: 1px solid #ccc"></div></td>
-      </tr>
-      <tr>
-        <td><h4 style="color:white;">Actors {{name1}} can't their eyes off of!</h4></td>
-        <td><h4 style="color:white;">Actors {{name2}} can't their eyes off of!</h4></td>
-      </tr>
-      <tr>
-        <td><div id="chart5" style="border: 1px solid #ccc"></div></td>
-        <td><div id="chart6" style="border: 1px solid #ccc"></div></td>
-      </tr>
-      <tr>
-        <td><h4 style="color:white;">Genres {{name1}} likes to stick to!</h4></td>
-        <td><h4 style="color:white;">Genres {{name2}} likes to stick to!</h4></td>
-      </tr>
-      <tr>
-        <td><div id="chart7" style="border: 1px solid #ccc"></div></td>
-        <td><div id="chart8" style="border: 1px solid #ccc"></div></td>
-      </tr>
-    </table>
-    <br>
-    <br>
-    <h4 style="color:white; text-align: left;">Here are the top TV shows both of you love watching!</h4>
-    <div id="chart9"></div>
-    <br>
-    <h4 style="color:white; text-align: left;">Here are the actors y'all love seeing on screen!</h4>
-    <div id="chart10"></div>
-    <br>
-    <h4 style="color:white; text-align: left;">Here are the top genres shows y'all are addicted to!</h4>
-    <table>
-      <tr>
-        <td><div id="chart11" style="border: 1px solid #ccc"></div></td>
-        <td><h4 style="color:white; text-align: right;">Your top genre is: {{top_genre}}!</h4></td>
-      </tr>
-    </table>
+  <div class="flex-container space-around">
+    <h3>{{name1}}'s total # minutes watched:</h3>
+    <h3>{{name2}}'s total # minutes watched:</h3>
   </div>
-  <hr>
-  
-<!-- End page content -->
-</div>
 
-<script>
-// Script to open and close sidebar
-function w3_open() {
-  document.getElementById("mySidebar").style.display = "block";
-}
+  <div class="container">
+    <div class="graph-container" id="graph1"></div>
+    <div class="graph-container" id="graph2"></div>
+  </div>
+
+  <div class="flex-container space-around">
+    <h3>{{name1}}'s most watched shows:</h3>
+    <h3>{{name2}}'s most watched shows:</h3>
+  </div>
+
+  <div class="container">
+    <div class="graph-container" id="graph3"></div>
+    <div class="graph-container" id="graph4"></div>
+  </div>
+
+  <div class="flex-container space-around">
+    <h3>Actors {{name1}} can't get enough of:</h3>
+    <h3>Actors {{name2}} can't get enough of:</h3>
+  </div>
+
+  <div class="container">
+    <div class="graph-container" id="graph5"></div>
+    <div class="graph-container" id="graph6"></div>
+  </div>
+
+  <div class="flex-container space-around">
+    <h3>Genres {{name1}} is addicted to:</h3>
+    <h3>Genres {{name2}} is addicted to:</h3>
+  </div>
+
+  <div class="container">
+    <div class="graph-container" id="graph7"></div>
+    <div class="graph-container" id="graph8"></div>
+  </div>
+
+  <div class="flex-container space-around">
+    <h3>Top TV Recommendations for {{name1}}:</h3>
+    <h3>Top TV Recommendations for {{name2}}:</h3>
+  </div>
+
+  <div class="flex-container space-around">
+    <ol>
+        {% for i in range(tv_recs1|length) %}
+        <li>{{tv_recs1[i]}}</li>
+        {% endfor %}
+    </ol>
+    <ol>
+        {% for i in range(tv_recs2|length) %}
+        <li>{{tv_recs2[i]}}</li>
+        {% endfor %}
+    </ol>
+  </div>
+
+  <div class="flex-container space-around">
+    <h3>Top Movie Recommendations for {{name1}}:</h3>
+    <h3>Top Movie Recommendations for {{name2}}:</h3>
+  </div>
+
+  <div class="flex-container space-around">
+    <ol>
+        {% for i in range(netflix_recs1|length) %}
+        <li>{{netflix_recs1[i]}}</li>
+        {% endfor %}
+    </ol>
+    <ol>
+        {% for i in range(netflix_recs2|length) %}
+        <li>{{netflix_recs2[i]}}</li>
+        {% endfor %}
+    </ol>
+  </div>
+
+  <h2>Sometimes Netflix just doesn't hit the spot</h2>
+
+  <div class="flex-container space-around">
+    <h3>Movies {{name1}} should check out outside Netflix:</h3>
+    <h3>Movies {{name2}} should check out outside Netflix:</h3>
+  </div>
+
+  <div class="flex-container space-around">
+    <ol>
+        {% for i in range(not_netflix_recs1|length) %}
+        <li>{{not_netflix_recs1[i]}}</li>
+        {% endfor %}
+    </ol>
+    <ol>
+        {% for i in range(not_netflix_recs2|length) %}
+        <li>{{not_netflix_recs2[i]}}</li>
+        {% endfor %}
+    </ol>
+  </div>
+
+  <h2>Let's take a look at your blend!</h2>
  
-function w3_close() {
-  document.getElementById("mySidebar").style.display = "none";
-}
-</script>
+  <h2>The actors both of you love</h3>
+  {% if (top_actors|length)==0 %}
+    <h2>Oops, looks like you have no common actors</h2>
+  {% endif %}
+  <ol class="common">
+    {% for i in range(top_actors|length) %}
+    <li>{{top_actors[i]}}</li>
+    {% endfor %}
+  </ol>
 
+  <h2>The genres both of you love</h3>
+    {% if (top_genres|length)==0 %}
+    <h2>Oops, looks like you have no common actors</h2>
+    {% endif %}
+    <ol class="common">
+      {% for i in range(top_genres|length) %}
+      <li>{{top_genres[i]}}</li>
+      {% endfor %}
+    </ol>
+
+  <script>
+    // Generate the data for the graphs (replace with your own data)
+    var graphs1 = {{graphJSON_minutes1 | safe}};
+    
+    var graphs2 = {{graphJSON_minutes2 | safe}};
+
+    var graphs3 = {{graphJSON_tv1 | safe}};
+
+    var graphs4 = {{graphJSON_tv2 | safe}};
+
+    var graphs5 = {{graphJSON_actors1 | safe}};
+
+    var graphs6 = {{graphJSON_actors2 | safe}};
+
+    var graphs7 = {{graphJSON_genres1 | safe}};
+
+    var graphs8 = {{graphJSON_genres2 | safe}};
+        
+    // Set the layout options for the graphs
+    var layout = {
+        title: 'Graph'
+    };
+    
+    // Plot the graphs
+    Plotly.newPlot('graph1', graphs1, layout);
+    Plotly.newPlot('graph2', graphs2, layout);
+    Plotly.newPlot('graph3', graphs3, layout);
+    Plotly.newPlot('graph4', graphs4, layout);
+    Plotly.newPlot('graph5', graphs5, layout);
+    Plotly.newPlot('graph6', graphs6, layout);
+    Plotly.newPlot('graph7', graphs7, layout);
+    Plotly.newPlot('graph8', graphs8, layout);
+  </script>
 </body>
-
-<script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
-<script type='text/javascript'>
-  var graphs = {{graphJSON_minutes1 | safe}};
-  Plotly.plot('chart1',graphs,{});
-
-  var graphs = {{graphJSON_minutes2 | safe}};
-  Plotly.plot('chart2',graphs,{});
-
-  var graphs = {{graphJSON_tv1 | safe}};
-  Plotly.plot('chart3',graphs,{});
-
-  var graphs = {{graphJSON_tv2 | safe}};
-  Plotly.plot('chart4',graphs,{});
-
-  var graphs = {{graphJSON_actors1 | safe}};
-  Plotly.plot('chart5',graphs,{});
-
-  var graphs = {{graphJSON_actors2 | safe}};
-  Plotly.plot('chart6',graphs,{});
-
-  var graphs = {{graphJSON_genres1 | safe}};
-  Plotly.plot('chart7',graphs,{});
-
-  var graphs = {{graphJSON_genres2 | safe}};
-  Plotly.plot('chart8',graphs,{});
-
-  var graphs = {{graphJSON_tv | safe}};
-  Plotly.plot('chart9',graphs,{});
-
-  var graphs = {{graphJSON_actors | safe}};
-  Plotly.plot('chart10',graphs,{});
-
-  var graphs = {{graphJSON_genre | safe}};
-  Plotly.plot('chart11',graphs,{});
- </script>
-
 </html>
